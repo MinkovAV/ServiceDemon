@@ -14,6 +14,8 @@ SERVICE_FILE_PID="$SERVICE_NAME.pid"
 SERVICE_FILE_LOG="$SERVICE_NAME.log"
 SERVICE_FILE_CFG="$SERVICE_NAME.cfg"
 
+useradd -M -s /bin/bash "$SERVICE_NAME"
+
 mkdir $SERVICE_NAME
 
 cd $SERVICE_NAME
@@ -30,11 +32,16 @@ echo ''
 echo 'exec ping -i $PING_DELAY  $HOST_FOR_PING'
 echo ''
 exec 1>&3 3>&-
-chmod 700 $SERVICE_FILE 
+chown $SERVICE_NAME:$SERVICE_NAME $SERVICE_FILE
+chmod 711 $SERVICE_FILE 
 
 
 #########################################################################################
 touch {"$SERVICE_FILE_LOG","$SERVICE_FILE_PID","$SERVICE_FILE_CFG"}
+chown $SERVICE_NAME:$SERVICE_NAME {"$SERVICE_FILE_LOG","$SERVICE_FILE_PID","$SERVICE_FILE_CFG"}
+chmod 644 {"$SERVICE_FILE_LOG","$SERVICE_FILE_PID","$SERVICE_FILE_CFG"}
+
+
 
 #########################################################################################
 exec 3>&1 1>"start-$SERVICE_NAME.sh"
@@ -43,7 +50,8 @@ echo ''
 echo "nohup /usr/local/bin/${SERVICE_FILE} >>/var/log/$SERVICE_NAME/${SERVICE_FILE_LOG} 2>>/var/log/$SERVICE_NAME/${SERVICE_FILE_LOG} &"
 echo "echo \$! > /run/${SERVICE_NAME}/${SERVICE_FILE_PID}"
 exec 1>&3 3>&-
-chmod 700 start-$SERVICE_NAME.sh
+chown $SERVICE_NAME:$SERVICE_NAME start-$SERVICE_NAME.sh
+chmod 711 start-$SERVICE_NAME.sh
 
 #########################################################################################
 exec 3>&1 1>"stop-$SERVICE_NAME.sh"
@@ -54,7 +62,8 @@ echo 'pid=$(cat "$pid_file")'
 echo 'kill -9 $pid'
 echo 'echo "" > "$pid_file"'
 exec 1>&3 3>&-
-chmod 700 stop-$SERVICE_NAME.sh
+chown $SERVICE_NAME:$SERVICE_NAME stop-$SERVICE_NAME.sh
+chmod 711 stop-$SERVICE_NAME.sh
 
 #########################################################################################
 exec 3>&1 1>"restart-$SERVICE_NAME.sh"
@@ -67,7 +76,8 @@ echo ''
 echo "./start-${SERVICE_NAME}.sh"
 echo ''
 exec 1>&3 3>&-
-chmod 700 restart-$SERVICE_NAME.sh
+chown $SERVICE_NAME:$SERVICE_NAME restart-$SERVICE_NAME.sh
+chmod 711 restart-$SERVICE_NAME.sh
 
 #########################################################################################
 exec 3>&1 1>"$SERVICE_NAME.conf"
@@ -96,20 +106,20 @@ exec 1>&3 3>&-
 exec 3>&1 1>"INSTALL.sh"
 echo '#!/bin/bash'
 echo ''
-echo "cp $SERVICE_FILE /usr/local/bin/"
-echo "cp start-${SERVICE_NAME}.sh /usr/local/bin/"
-echo "cp stop-${SERVICE_NAME}.sh /usr/local/bin/"
-echo "cp restart-${SERVICE_NAME}.sh /usr/local/bin/"
+echo "cp -p $SERVICE_FILE /usr/local/bin/"
+echo "cp -p start-${SERVICE_NAME}.sh /usr/local/bin/"
+echo "cp -p stop-${SERVICE_NAME}.sh /usr/local/bin/"
+echo "cp -p restart-${SERVICE_NAME}.sh /usr/local/bin/"
 echo "mkdir /run/${SERVICE_NAME}"
-echo "cp $SERVICE_FILE_PID /run/${SERVICE_NAME}/"
+echo "cp -p $SERVICE_FILE_PID /run/${SERVICE_NAME}/"
 echo "mkdir /var/log/${SERVICE_NAME}"
-echo "cp $SERVICE_FILE_LOG /var/log/${SERVICE_NAME}"
-echo "cp $SERVICE_NAME.conf /etc/systemd/system/$SERVICE_NAME.service"
-echo "cp $SERVICE_FILE_CFG /etc/"
+echo "cp -p $SERVICE_FILE_LOG /var/log/${SERVICE_NAME}"
+echo "cp -p $SERVICE_NAME.conf /etc/systemd/system/$SERVICE_NAME.service"
+echo "cp -p $SERVICE_FILE_CFG /etc/"
 echo "systemctl daemon-reload"
 echo ""
 exec 1>&3 3>&-
-chmod 700 INSTALL.sh
+chmod 711 INSTALL.sh
 
 #########################################################################################
 exec 3>&1 1>"UNINSTALL.sh"
@@ -122,9 +132,11 @@ echo "rm -r /run/${SERVICE_NAME}"
 echo "rm -r /var/log/${SERVICE_NAME}"
 echo "rm  /etc/systemd/system/$SERVICE_NAME.service"
 echo "rm /etc/$SERVICE_FILE_CFG"
+echo "deluser ${SERVICE_NAME}"
+echo "groupdel ${SERVICE_NAME}"
 echo ""
 exec 1>&3 3>&-
-chmod 700 UNINSTALL.sh
+chmod 711 UNINSTALL.sh
 
 
 
